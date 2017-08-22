@@ -59,15 +59,15 @@ func proc() {
 			}
 
 			switch currKey {
-				case "creation date":
-					core.CreationDate = uint64(val)
-					continue
-				case "piece length":
-					core.PieceLength = uint32(val)
-					continue
-				case "pieces":
-					core.PiecesCount = uint64(val)
-					continue
+			case "creation date":
+				core.CreationDate = uint64(val)
+				continue
+			case "piece length":
+				core.PieceLength = uint32(val)
+				continue
+			case "pieces":
+				core.PiecesCount = uint64(val)
+				continue
 			}
 			info = append(info, nxt)
 		}
@@ -153,7 +153,6 @@ func main() {
 	core = Tracker{}
 	proc()
 	fmt.Printf("%+v", core)
-	return
 	for idx, p := range info {
 		println(idx, p)
 	}
