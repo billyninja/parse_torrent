@@ -47,6 +47,28 @@ func proc() {
 					break
 				}
 			}
+
+			if nxt == "" {
+				continue
+			}
+
+			val, err := strconv.Atoi(nxt)
+			if err != nil {
+				println("ATOI err w: ", nxt)
+				continue
+			}
+
+			switch currKey {
+				case "creation date":
+					core.CreationDate = uint64(val)
+					continue
+				case "piece length":
+					core.PieceLength = uint32(val)
+					continue
+				case "pieces":
+					core.PiecesCount = uint64(val)
+					continue
+			}
 			info = append(info, nxt)
 		}
 
@@ -71,10 +93,8 @@ func proc() {
 					return
 				}
 				if (i+1)+stride > maxl {
-
-					if info[len(info)-2] == "pieces" {
-						info = append(info, string(stride))
-					}
+					println("overshoot must be piece count")
+					core.PiecesCount = uint64(stride)
 					return
 				}
 
@@ -97,6 +117,12 @@ func proc() {
 					continue
 				case "creation date":
 					currKey = "creation date"
+					continue
+				case "piece length":
+					currKey = "piece length"
+					continue
+				case "pieces":
+					currKey = "pieces"
 					continue
 				}
 
