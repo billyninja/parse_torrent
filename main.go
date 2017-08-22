@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -21,17 +22,16 @@ type Tracker struct {
 	Comment      string
 	CreatedBy    string
 	PieceLength  uint32
-	PiecesCount  uint64
 	CreationDate uint64
 	Files        []*File
+	info_hash    string
 }
 
-var info []string
 var pieces []string
 var core Tracker
+var cc int
 
 func proc() {
-
 	fullchunk, err := ioutil.ReadFile("sample.torrent")
 	maxl := len(fullchunk)
 	if err != nil {
@@ -40,17 +40,15 @@ func proc() {
 
 	currKey := ""
 	for i, byt := range fullchunk {
-
+		cc += 1
 		// 105 -> i (integer value)
 		if byt == 105 {
 			nxt := ""
 			for j := i + 1; ; j++ {
 				seg := fullchunk[j : j+1]
 				if bytes.ContainsAny(seg, "1234567890") {
-					//fmt.Printf("i>%s\n", seg)
 					nxt += string(seg)
 				} else {
-					//fmt.Printf("i breaking at %q\n", seg)
 					break
 				}
 			}
@@ -73,13 +71,11 @@ func proc() {
 				core.PieceLength = uint32(val)
 				continue
 			case "pieces":
-				core.PiecesCount = uint64(val)
-				continue
+				return
 			case "length":
 				core.Files[len(core.Files)-1].Length = uint64(val)
 				continue
 			}
-			info = append(info, nxt)
 		}
 
 		// 58 -> :
@@ -103,8 +99,6 @@ func proc() {
 					return
 				}
 				if (i+1)+stride > maxl {
-					println("overshoot must be piece count")
-					core.PiecesCount = uint64(stride)
 					return
 				}
 
@@ -147,6 +141,14 @@ func proc() {
 				case "path":
 					currKey = "path"
 					continue
+				case "info":
+					remainder := fullchunk[i+1:]
+					//fmt.Printf("REMAINDER:\n\n\n%s\n\n\n", remainder)
+					hs := sha1.New()
+					hs.Write(remainder)
+					csum := hs.Sum(nil)
+					core.info_hash = fmt.Sprintf("% x", csum)
+					continue
 				}
 
 				switch currKey {
@@ -185,4 +187,5 @@ func main() {
 	for _, fl := range core.Files {
 		fmt.Printf("%+v\n", fl)
 	}
+	println("cc:", cc)
 }
