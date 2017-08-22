@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"strconv"
@@ -29,7 +30,6 @@ type Tracker struct {
 
 var pieces []string
 var core Tracker
-var cc int
 
 func proc() {
 	fullchunk, err := ioutil.ReadFile("sample.torrent")
@@ -40,7 +40,7 @@ func proc() {
 
 	currKey := ""
 	for i, byt := range fullchunk {
-		cc += 1
+
 		// 105 -> i (integer value)
 		if byt == 105 {
 			nxt := ""
@@ -81,14 +81,11 @@ func proc() {
 		// 58 -> :
 		if byt == 58 {
 			prev := ""
-			for j := 1; j <= 6; j++ {
+			for j := 1; j <= 8; j++ {
 				seg := fullchunk[(i - j):((i - j) + 1)]
-				//fmt.Printf(">%+q\n", seg)
 				if bytes.ContainsAny(seg, "1234567890") {
-					//println("curr", prev)
 					prev = string(seg) + prev
 				} else {
-					//fmt.Printf("breaking at>%+q\n", seg)
 					break
 				}
 			}
@@ -142,8 +139,7 @@ func proc() {
 					currKey = "path"
 					continue
 				case "info":
-					remainder := fullchunk[i+1:]
-					//fmt.Printf("REMAINDER:\n\n\n%s\n\n\n", remainder)
+					remainder := fullchunk[i+1 : maxl-2]
 					hs := sha1.New()
 					hs.Write(remainder)
 					csum := hs.Sum(nil)
@@ -187,5 +183,4 @@ func main() {
 	for _, fl := range core.Files {
 		fmt.Printf("%+v\n", fl)
 	}
-	println("cc:", cc)
 }
