@@ -9,7 +9,13 @@ import (
 	"time"
 )
 
+type File struct {
+	Path   string
+	Length uint64
+}
+
 type Tracker struct {
+	Name         string
 	Announce     string
 	AnnList      []string
 	Comment      string
@@ -17,6 +23,7 @@ type Tracker struct {
 	PieceLength  uint32
 	PiecesCount  uint64
 	CreationDate uint64
+	Files        []*File
 }
 
 var info []string
@@ -68,6 +75,9 @@ func proc() {
 			case "pieces":
 				core.PiecesCount = uint64(val)
 				continue
+			case "length":
+				core.Files[len(core.Files)-1].Length = uint64(val)
+				continue
 			}
 			info = append(info, nxt)
 		}
@@ -103,6 +113,9 @@ func proc() {
 				i = (i + 1) + stride
 
 				switch sc {
+				case "name":
+					currKey = "name"
+					continue
 				case "announce":
 					currKey = "announce"
 					continue
@@ -124,9 +137,22 @@ func proc() {
 				case "pieces":
 					currKey = "pieces"
 					continue
+				case "files":
+					currKey = "files"
+					continue
+				case "length":
+					currKey = "length"
+					core.Files = append(core.Files, &File{})
+					continue
+				case "path":
+					currKey = "path"
+					continue
 				}
 
 				switch currKey {
+				case "name":
+					core.Name = sc
+					continue
 				case "announce":
 					core.Announce = sc
 					continue
@@ -139,22 +165,24 @@ func proc() {
 				case "created by":
 					core.CreatedBy = sc
 					continue
+				case "path":
+					core.Files[len(core.Files)-1].Path = sc
+					continue
 				}
 				continue
 			}
 		}
 
 	}
-	//fmt.Printf("%s", fullchunk)
 }
 
 func main() {
 	t1 := time.Now()
 	core = Tracker{}
 	proc()
+	fmt.Printf("\nunder %s\n", time.Since(t1))
 	fmt.Printf("%+v", core)
-	for idx, p := range info {
-		println(idx, p)
+	for _, fl := range core.Files {
+		fmt.Printf("%+v\n", fl)
 	}
-	fmt.Printf("%s", time.Since(t1))
 }
