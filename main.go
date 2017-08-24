@@ -3,12 +3,12 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
+	"net"
 )
 
 type File struct {
@@ -25,11 +25,63 @@ type Tracker struct {
 	PieceLength  uint32
 	CreationDate uint64
 	Files        []*File
-	info_hash    string
+	InfoHash     string
+	PeerId       string
 }
 
 var pieces []string
 var core Tracker
+
+
+func (tr *Tracker) ConnectToTracker() {
+
+    url := fmt.Sprintf(
+        "%s?info_hash=%s&peer_id=%s&uploaded=%d&downloaded=%d&left=%d&event=%s&compact=%d",
+        tr.Announce,
+        tr.InfoHash,
+        tr.PeerId,
+        0,
+        0,
+        10240,
+        "started",
+        0,
+    )
+    println(url)
+
+   	// UDP resolver
+    addr, err := net.ResolveUDPAddr("udp4", "239.192.152.143:6771")
+	if err != nil {
+		fmt.Println("Error reading from UDP: ", err)
+		return
+	}
+	conn, err := net.ListenMulticastUDP("udp4", nil, addr)
+	if err != nil {
+		fmt.Println("Error2: ", err)
+		return
+	}
+
+	base := "BT-SEARCH * HTTP/1.1\r\n" +
+		"Host: %s\r\n" +
+		"Port: %d\r\n" +
+		"Infohash: %X\r\n\r\n"
+
+
+	payload := []byte(fmt.Sprintf(base, addr, 7777, tr.InfoHash))
+	fmt.Printf("%s", payload)
+	conn.WriteToUDP(payload, addr)
+
+	for {
+		println(".")
+		answer := make([]byte, 256)
+		_, from, err := conn.ReadFromUDP(answer)
+		if err != nil {
+			fmt.Println("Error reading from UDP: ", err)
+			continue
+		}
+    	fmt.Printf("==============\n\n\n%+v\n\n\n=========\n%+v\n-----", answer, from)
+	}
+
+}
 
 func proc() {
 	fullchunk, err := ioutil.ReadFile("sample.torrent")
@@ -143,7 +195,8 @@ func proc() {
 					hs := sha1.New()
 					hs.Write(remainder)
 					csum := hs.Sum(nil)
-					core.info_hash = fmt.Sprintf("% x", csum)
+					core.InfoHash = "74c6cf23e0496fa0dd25b78864bb229024558f17"
+					fmt.Sprintf("% x", csum)
 					continue
 				}
 
@@ -183,4 +236,5 @@ func main() {
 	for _, fl := range core.Files {
 		fmt.Printf("%+v\n", fl)
 	}
+	core.ConnectToTracker()
 }
